@@ -13,10 +13,13 @@ const initialBuild = {
   hdd: null,
   psu: null,
   cooler: null,
+  fan: null,
   soundcard: null,
   nic: null,
-  monitor: null,
 }
+
+// Base required parts (always required)
+const baseRequired = ['case', 'cpu', 'motherboard', 'memory', 'psu', 'cooler', 'ssd']
 
 export function BuildProvider({ children }) {
   const [build, setBuild] = useState(initialBuild)
@@ -43,12 +46,19 @@ export function BuildProvider({ children }) {
     setBuild(savedBuild)
   }, [])
 
+  // GPU is required if CPU has no integrated graphics
+  const gpuRequired = build.cpu && build.cpu.igpu === null
+  const requiredCategories = gpuRequired ? [...baseRequired, 'gpu'] : baseRequired
+
+  const isPartRequired = useCallback((category) => {
+    return requiredCategories.includes(category)
+  }, [requiredCategories])
+
   const compatibilityIssues = checkCompatibility(build)
 
   const selectedCount = Object.values(build).filter(Boolean).length
-  const requiredSelected = ['case', 'cpu', 'motherboard', 'memory', 'psu', 'cooler', 'ssd']
-    .filter(cat => build[cat] !== null).length
-  const isComplete = requiredSelected === 7
+  const requiredSelected = requiredCategories.filter(cat => build[cat] !== null).length
+  const isComplete = requiredSelected === requiredCategories.length
 
   return (
     <BuildContext.Provider value={{
@@ -60,6 +70,9 @@ export function BuildProvider({ children }) {
       compatibilityIssues,
       selectedCount,
       isComplete,
+      isPartRequired,
+      requiredCategories,
+      gpuRequired,
     }}>
       {children}
     </BuildContext.Provider>

@@ -7,10 +7,10 @@ export const categories = [
   { id: 'ssd', name: '固态硬盘', required: true },
   { id: 'hdd', name: '机械硬盘', required: false },
   { id: 'psu', name: '电源', required: true },
-  { id: 'cooler', name: '散热器', required: true },
+  { id: 'cooler', name: 'CPU散热器', required: true },
+  { id: 'fan', name: '机箱风扇', required: false },
   { id: 'soundcard', name: '声卡', required: false },
   { id: 'nic', name: '网卡', required: false },
-  { id: 'monitor', name: '显示器', required: false },
 ]
 
 export const cpus = [
@@ -465,6 +465,25 @@ export const nics = [
   { id: 'nic-3', brand: 'TP-Link', model: 'TX401', interface: 'PCIe', speed: '10GbE', launchYear: 2022, tier: '中端' },
 ]
 
+export const fans = [
+  { id: 'fan-1', brand: '利民', model: 'TL-C12C-S', size: 120, type: 'PWM', rgb: true, count: 3, airflow: 56, noise: 28, launchYear: 2022, tier: '中端' },
+  { id: 'fan-2', brand: '利民', model: 'TL-C12C-W', size: 120, type: 'PWM', rgb: false, count: 1, airflow: 56, noise: 28, launchYear: 2022, tier: '入门' },
+  { id: 'fan-3', brand: '利民', model: 'TL-C14C-S', size: 140, type: 'PWM', rgb: true, count: 3, airflow: 82, noise: 30, launchYear: 2022, tier: '中端' },
+  { id: 'fan-4', brand: '猫头鹰', model: 'NF-A12x25 PWM', size: 120, type: 'PWM', rgb: false, count: 1, airflow: 60, noise: 22, launchYear: 2021, tier: '旗舰' },
+  { id: 'fan-5', brand: '猫头鹰', model: 'NF-A14 PWM', size: 140, type: 'PWM', rgb: false, count: 1, airflow: 82, noise: 25, launchYear: 2021, tier: '高端' },
+  { id: 'fan-6', brand: '九州风神', model: 'FC120', size: 120, type: 'PWM', rgb: true, count: 3, airflow: 64, noise: 28, launchYear: 2022, tier: '中端' },
+  { id: 'fan-7', brand: '九州风神', model: 'FK120', size: 120, type: 'PWM', rgb: false, count: 3, airflow: 68, noise: 28, launchYear: 2023, tier: '中端' },
+  { id: 'fan-8', brand: '海盗船', model: 'iCUE LL120 RGB', size: 120, type: 'PWM', rgb: true, count: 3, airflow: 43, noise: 25, launchYear: 2021, tier: '高端' },
+  { id: 'fan-9', brand: '海盗船', model: 'iCUE LX120', size: 120, type: 'PWM', rgb: true, count: 3, airflow: 70, noise: 30, launchYear: 2024, tier: '高端' },
+  { id: 'fan-10', brand: '安耐美', model: 'D.F.PRO', size: 120, type: 'PWM', rgb: true, count: 1, airflow: 90, noise: 30, launchYear: 2022, tier: '高端' },
+  { id: 'fan-11', brand: '联力', model: 'SL120 V2', size: 120, type: 'PWM', rgb: true, count: 3, airflow: 58, noise: 29, launchYear: 2023, tier: '高端' },
+  { id: 'fan-12', brand: '联力', model: 'UNI FAN P28', size: 120, type: 'PWM', rgb: false, count: 3, airflow: 75, noise: 33, launchYear: 2023, tier: '高端' },
+  { id: 'fan-13', brand: '追风者', model: 'T30', size: 120, type: 'PWM', rgb: false, count: 1, airflow: 73, noise: 27, launchYear: 2022, tier: '旗舰' },
+  { id: 'fan-14', brand: '雅浚', model: 'JF135', size: 135, type: 'PWM', rgb: false, count: 1, airflow: 70, noise: 26, launchYear: 2023, tier: '中端' },
+  { id: 'fan-15', brand: 'be quiet!', model: 'Silent Wings 4', size: 120, type: 'PWM', rgb: false, count: 1, airflow: 54, noise: 18, launchYear: 2022, tier: '高端' },
+  { id: 'fan-16', brand: '先马', model: '阵风', size: 120, type: 'PWM', rgb: true, count: 3, airflow: 50, noise: 30, launchYear: 2023, tier: '入门' },
+]
+
 export const monitors = [
   { id: 'monitor-1', brand: 'LG', model: '27GP850', size: 27, resolution: '2560x1440', panel: 'IPS', refreshRate: 165, responseTime: 1, hdr: 'HDR400', launchYear: 2021, tier: '中高端' },
   { id: 'monitor-2', brand: 'LG', model: '27GP95R', size: 27, resolution: '3840x2160', panel: 'Nano IPS', refreshRate: 144, responseTime: 1, hdr: 'HDR600', launchYear: 2022, tier: '高端' },
@@ -500,9 +519,9 @@ export const hardwareDB = {
   psu: psus,
   cooler: coolers,
   case: cases,
+  fan: fans,
   soundcard: soundCards,
   nic: nics,
-  monitor: monitors,
 }
 
 export function getHardwareByCategory(category) {

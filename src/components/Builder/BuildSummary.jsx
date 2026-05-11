@@ -10,10 +10,10 @@ const slotLabels = {
   ssd: '固态硬盘',
   hdd: '机械硬盘',
   psu: '电源',
-  cooler: '散热器',
+  cooler: 'CPU散热器',
+  fan: '机箱风扇',
   soundcard: '声卡',
   nic: '网卡',
-  monitor: '显示器',
 }
 
 function getPartDetail(category, part) {
