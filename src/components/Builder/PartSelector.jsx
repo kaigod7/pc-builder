@@ -20,36 +20,36 @@ const slotColors = {
 function getPartDisplayName(category, part) {
   if (!part) return '未选择'
   if (category === 'cpu') {
-    return `${part.brand} ${part.model} · ${part.cores}核${part.threads}线程 · ${part.socket}`
+    return `${part.cores}核${part.threads}线程 · ${part.baseClock}~${part.boostClock}GHz · ${part.socket}`
   }
   if (category === 'motherboard') {
-    return `${part.brand} ${part.model} · ${part.socket} · ${part.memoryType}`
+    return `${part.chipset} · ${part.memoryType} · ${part.formFactor} · ${part.m2Slots}个M.2`
   }
   if (category === 'memory') {
-    return `${part.brand} ${part.model} · ${part.type} ${part.capacity}GB ${part.speed}MHz`
+    return `${part.type} ${part.capacity}GB ${part.speed}MHz · ${part.latency}`
   }
   if (category === 'gpu') {
-    return `${part.brand} ${part.model} · ${part.vram}GB ${part.vramType} · ${part.tdp}W`
+    return `${part.vram}GB ${part.vramType} · TDP ${part.tdp}W · PCIe ${part.pcieVersion}`
   }
   if (category === 'ssd') {
-    return `${part.brand} ${part.model} · ${part.capacity}GB · 读${part.readSpeed}MB/s`
+    return `${part.capacity}GB · 读${part.readSpeed}MB/s · 写${part.writeSpeed}MB/s`
   }
   if (category === 'hdd') {
-    return `${part.brand} ${part.model} · ${part.capacity}GB · ${part.rpm}rpm`
+    return `${part.capacity}GB · ${part.rpm}rpm · ${part.cache}MB缓存`
   }
   if (category === 'psu') {
-    return `${part.brand} ${part.model} · ${part.wattage}W · ${part.efficiency}`
+    return `${part.wattage}W · ${part.efficiency} · ${part.modular}`
   }
   if (category === 'cooler') {
-    return `${part.brand} ${part.model} · ${part.type} · TDP ${part.tdp}W`
+    return `${part.type} · TDP ${part.tdp}W · ${part.sockets.join('/')}`
   }
   if (category === 'case') {
-    return `${part.brand} ${part.model} · ${part.formFactor} · GPU≤${part.maxGpuLength}mm`
+    return `${part.formFactor} · GPU≤${part.maxGpuLength}mm · 散热≤${part.maxCoolerHeight}mm`
   }
   if (category === 'monitor') {
-    return `${part.brand} ${part.model} · ${part.size}" · ${part.resolution} · ${part.refreshRate}Hz`
+    return `${part.size}" · ${part.resolution} · ${part.refreshRate}Hz · ${part.panel}`
   }
-  return `${part.brand} ${part.model}`
+  return part.model
 }
 
 function getShortName(category, part) {
@@ -61,21 +61,38 @@ function getShortName(category, part) {
   return `${part.brand} ${part.model}`
 }
 
+function getBrands(parts) {
+  const brands = new Set()
+  parts.forEach(p => brands.add(p.brand))
+  return Array.from(brands).sort()
+}
+
 export default function PartSelector({ build, selectPart, removePart, activeCategory, setActiveCategory }) {
   const [expandedCategory, setExpandedCategory] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedBrand, setSelectedBrand] = useState('全部')
 
   const handleToggleCategory = (catId) => {
-    setExpandedCategory(expandedCategory === catId ? null : catId)
-    setActiveCategory(catId)
+    const willExpand = expandedCategory !== catId
+    setExpandedCategory(willExpand ? catId : null)
+    setActiveCategory(willExpand ? catId : null)
     setSearchTerm('')
+    setSelectedBrand('全部')
   }
 
   const getFilteredParts = (categoryId) => {
-    const parts = getHardwareByCategory(categoryId)
+    let parts = getHardwareByCategory(categoryId)
     if (!parts) return []
 
     const partsWithCompatibility = filterCompatibleParts(parts, build, categoryId)
+
+    if (selectedBrand !== '全部') {
+      partsWithCompatibility.forEach(p => {
+        if (p.brand !== selectedBrand && !p.compatible) {
+          p._filteredByBrand = true
+        }
+      })
+    }
 
     if (!searchTerm) return partsWithCompatibility
 
@@ -86,8 +103,17 @@ export default function PartSelector({ build, selectPart, removePart, activeCate
     )
   }
 
+  const handleSelect = (category, part, isSelected) => {
+    if (isSelected) {
+      removePart(category)
+    } else {
+      selectPart(category, part)
+      setExpandedCategory(null)
+    }
+  }
+
   return (
-    <div className="h-full flex flex-col bg-bg-card border-r border-border">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <h2 className="text-lg font-bold text-text-primary mb-1">配件选择</h2>
@@ -102,6 +128,9 @@ export default function PartSelector({ build, selectPart, removePart, activeCate
           const selectedPart = build[cat.id]
           const isExpanded = expandedCategory === cat.id
           const color = slotColors[cat.id]
+          const allParts = getHardwareByCategory(cat.id) || []
+          const brands = useMemo(() => getBrands(allParts), [allParts])
+          const filteredParts = getFilteredParts(cat.id)
 
           return (
             <div key={cat.id} className="border-b border-border/50">
@@ -146,6 +175,35 @@ export default function PartSelector({ build, selectPart, removePart, activeCate
               {/* Part List */}
               {isExpanded && (
                 <div className="px-4 pb-3">
+                  {/* Brand Filter */}
+                  {brands.length > 0 && (
+                    <div className="flex gap-1 mb-2 overflow-x-auto pb-1">
+                      <button
+                        onClick={() => setSelectedBrand('全部')}
+                        className={`px-2 py-1 text-[10px] rounded-full whitespace-nowrap transition-colors ${
+                          selectedBrand === '全部'
+                            ? 'bg-accent text-bg-primary'
+                            : 'bg-bg-primary text-text-muted hover:text-text-primary border border-border'
+                        }`}
+                      >
+                        全部
+                      </button>
+                      {brands.map(brand => (
+                        <button
+                          key={brand}
+                          onClick={() => setSelectedBrand(brand)}
+                          className={`px-2 py-1 text-[10px] rounded-full whitespace-nowrap transition-colors ${
+                            selectedBrand === brand
+                              ? 'bg-accent text-bg-primary'
+                              : 'bg-bg-primary text-text-muted hover:text-text-primary border border-border'
+                          }`}
+                        >
+                          {brand}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Search */}
                   <div className="relative mb-2">
                     <input
@@ -159,25 +217,25 @@ export default function PartSelector({ build, selectPart, removePart, activeCate
 
                   {/* Parts */}
                   <div className="space-y-1 max-h-[280px] overflow-y-auto">
-                    {getFilteredParts(cat.id).map((part) => {
+                    {filteredParts.length === 0 && (
+                      <div className="text-center py-4 text-xs text-text-muted">
+                        未找到匹配的型号
+                      </div>
+                    )}
+                    {filteredParts.map((part) => {
                       const isSelected = selectedPart?.id === part.id
                       const isCompatible = part.compatible
+                      const filteredByBrand = part._filteredByBrand
 
                       return (
                         <button
                           key={part.id}
-                          onClick={() => {
-                            if (isSelected) {
-                              removePart(cat.id)
-                            } else {
-                              selectPart(cat.id, part)
-                            }
-                          }}
+                          onClick={() => handleSelect(cat.id, part, isSelected)}
                           disabled={!isCompatible && !isSelected}
                           className={`w-full px-3 py-2 rounded-lg text-left text-xs transition-all ${
                             isSelected
                               ? 'bg-accent-dim border border-accent/30'
-                              : isCompatible
+                              : isCompatible && !filteredByBrand
                                 ? 'hover:bg-bg-hover border border-transparent'
                                 : 'opacity-40 cursor-not-allowed border border-transparent'
                           }`}
@@ -186,7 +244,7 @@ export default function PartSelector({ build, selectPart, removePart, activeCate
                             {part.brand} {part.model}
                           </div>
                           <div className="text-text-muted mt-0.5">
-                            {getPartDisplayName(cat.id, part).replace(`${part.brand} ${part.model} · `, '')}
+                            {getPartDisplayName(cat.id, part)}
                           </div>
                           {!isCompatible && part.issues?.length > 0 && (
                             <div className="text-danger text-[10px] mt-1">

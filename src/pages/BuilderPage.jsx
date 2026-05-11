@@ -16,20 +16,27 @@ export default function BuilderPage() {
     saveBuild(build, name)
   }
 
+  const handleSelectPart = (cat, part) => {
+    selectPart(cat, part)
+    setShowMobilePanel(false)
+  }
+
   const errorCount = compatibilityIssues.filter(i => i.type === 'error').length
   const warningCount = compatibilityIssues.filter(i => i.type === 'warning').length
 
   return (
-    <div className="h-[calc(100vh-56px)] flex">
+    <div className="h-[calc(100vh-56px)] flex px-4 sm:px-6 lg:px-8 xl:px-12 gap-4 py-4">
       {/* Left Panel - Part Selector (Desktop) */}
-      <div className="w-[380px] shrink-0 hidden md:block">
-        <PartSelector
-          build={build}
-          selectPart={selectPart}
-          removePart={removePart}
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
-        />
+      <div className="w-1/2 max-w-xl hidden md:block">
+        <div className="h-full rounded-2xl overflow-hidden border border-border bg-bg-card">
+          <PartSelector
+            build={build}
+            selectPart={selectPart}
+            removePart={removePart}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+          />
+        </div>
       </div>
 
       {/* Mobile Selector Panel */}
@@ -51,10 +58,7 @@ export default function BuilderPage() {
             <div className="flex-1 overflow-hidden">
               <PartSelector
                 build={build}
-                selectPart={(cat, part) => {
-                  selectPart(cat, part)
-                  setShowMobilePanel(false)
-                }}
+                selectPart={handleSelectPart}
                 removePart={removePart}
                 activeCategory={activeCategory}
                 setActiveCategory={setActiveCategory}
@@ -77,20 +81,18 @@ export default function BuilderPage() {
       </div>
 
       {/* Right Panel - 3D Model + Controls */}
-      <div className="flex-1 flex flex-col relative">
-        {/* 3D Viewport */}
-        <div className="flex-1 relative">
+      <div className="flex-1 flex flex-col relative min-w-0">
+        <div className="flex-1 rounded-2xl overflow-hidden border border-border bg-bg-card relative">
           <PCModel build={build} activeCategory={activeCategory} />
 
           {/* Overlay info */}
           <div className="absolute top-4 left-4 right-4 pointer-events-none">
             <div className="flex items-start justify-between">
-              <div className="bg-bg-card/80 backdrop-blur-sm border border-border rounded-lg px-4 py-2 pointer-events-auto">
+              <div className="bg-bg-primary/80 backdrop-blur-sm border border-border rounded-lg px-4 py-2 pointer-events-auto">
                 <div className="text-xs text-text-muted">已选配件</div>
                 <div className="text-lg font-bold text-accent">{selectedCount}<span className="text-text-muted text-sm">/12</span></div>
               </div>
 
-              {/* Compatibility badge */}
               {(errorCount > 0 || warningCount > 0) && (
                 <div className={`px-3 py-1.5 rounded-lg text-xs font-medium pointer-events-auto ${
                   errorCount > 0
@@ -112,7 +114,7 @@ export default function BuilderPage() {
         </div>
 
         {/* Bottom action bar */}
-        <div className="border-t border-border bg-bg-card/80 backdrop-blur-sm px-6 py-4">
+        <div className="mt-4 px-6 py-4 border border-border bg-bg-card rounded-xl">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
             <div className="text-sm text-text-muted">
               {isComplete ? (

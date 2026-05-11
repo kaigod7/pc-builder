@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
+import { useTheme } from '../context/ThemeContext'
 
 const navItems = [
   { path: '/', label: '装机搭配', icon: '◈' },
@@ -7,6 +8,35 @@ const navItems = [
   { path: '/peripherals', label: '外设排行', icon: '◉' },
   { path: '/saved', label: '我的方案', icon: '✦' },
 ]
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+
+  const options = [
+    { value: 'light', label: '☀', title: '亮色' },
+    { value: 'dark', label: '☾', title: '暗色' },
+    { value: 'system', label: '◑', title: '跟随系统' },
+  ]
+
+  return (
+    <div className="flex items-center bg-bg-primary border border-border rounded-lg overflow-hidden">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => setTheme(opt.value)}
+          title={opt.title}
+          className={`px-2.5 py-1.5 text-sm transition-all ${
+            theme === opt.value
+              ? 'bg-accent text-bg-primary'
+              : 'text-text-muted hover:text-text-primary'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function Layout({ children }) {
   const location = useLocation()
@@ -41,19 +71,24 @@ export default function Layout({ children }) {
               ))}
             </div>
 
-            {/* Mobile menu button */}
-            <button
-              className="sm:hidden p-2 text-text-secondary hover:text-text-primary"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
+            {/* Theme toggle + Mobile menu button */}
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:block">
+                <ThemeToggle />
+              </div>
+              <button
+                className="sm:hidden p-2 text-text-secondary hover:text-text-primary"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Mobile Nav */}
@@ -74,6 +109,9 @@ export default function Layout({ children }) {
                   {item.label}
                 </Link>
               ))}
+              <div className="px-4 pt-2">
+                <ThemeToggle />
+              </div>
             </div>
           )}
         </div>
@@ -86,7 +124,7 @@ export default function Layout({ children }) {
 
       {/* Footer */}
       <footer className="border-t border-border py-4 text-center text-xs text-text-muted">
-        PC Builder - 装机配置助手 · 数据仅供参�考
+        PC Builder - 装机配置助手 · 数据仅供参考
       </footer>
     </div>
   )

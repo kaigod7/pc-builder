@@ -3,20 +3,19 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Html, Edges } from '@react-three/drei'
 import * as THREE from 'three'
 
-// Slot positions inside the case (x, y, z)
+// Realistic ATX case component positions
 const slotPositions = {
-  cpu: [0, 1.8, 0.2],
-  motherboard: [0, 0.3, 0],
-  memory: [0.8, 1.0, 0],
-  gpu: [0, -0.8, 0.3],
-  ssd: [-0.6, -0.5, 0],
-  hdd: [-1.2, -2.2, 0.5],
-  psu: [1.3, -2.3, 0.5],
-  cooler: [0, 3.0, 0.2],
-  soundcard: [0.5, -0.3, 0],
-  nic: [1.0, -0.3, 0],
-  case: [0, 0, 0],
-  monitor: [4.0, 1.0, 0],
+  cpu: [-0.3, 0.8, 0.1],
+  motherboard: [-0.3, 0.3, 0],
+  memory: [0.2, 1.0, 0.05],
+  gpu: [0.3, -0.5, 0.15],
+  ssd: [0.6, -0.8, 0.05],
+  hdd: [-0.8, -2.0, 0.3],
+  psu: [0.8, -2.2, 0.3],
+  cooler: [-0.3, 1.8, 0.1],
+  soundcard: [0.4, 0.0, 0.1],
+  nic: [0.6, -0.2, 0.1],
+  monitor: [3.5, 0.5, 0],
 }
 
 const slotColors = {
@@ -30,7 +29,6 @@ const slotColors = {
   cooler: '#3b82f6',
   soundcard: '#ec4899',
   nic: '#8b5cf6',
-  case: '#ffffff',
   monitor: '#10b981',
 }
 
@@ -45,17 +43,194 @@ const slotLabels = {
   cooler: '散热',
   soundcard: '声卡',
   nic: '网卡',
-  case: '机箱',
   monitor: '显示器',
 }
 
-function AnimatedSlot({ position, color, label, isSelected, isHighlighted }) {
+// Generic part shapes based on category
+function PartPlaceholder({ position, color, category, isSelected }) {
+  const meshRef = useRef()
+
+  useFrame((state) => {
+    if (meshRef.current && isSelected) {
+      meshRef.current.rotation.y += 0.005
+    }
+  })
+
+  if (!isSelected) return null
+
+  // Different shapes for different components
+  const shapes = {
+    cpu: { geometry: <boxGeometry args={[0.4, 0.05, 0.4]} />, offset: [0, 0, 0] },
+    motherboard: { geometry: <boxGeometry args={[1.2, 1.8, 0.05]} />, offset: [0, 0, 0] },
+    memory: { geometry: <boxGeometry args={[0.08, 0.6, 0.02]} />, offset: [0, 0, 0] },
+    gpu: { geometry: <boxGeometry args={[0.6, 0.15, 1.8]} />, offset: [0, 0, 0] },
+    ssd: { geometry: <boxGeometry args={[0.08, 0.03, 0.22]} />, offset: [0, 0, 0] },
+    hdd: { geometry: <cylinderGeometry args={[0.35, 0.35, 0.1, 32]} />, offset: [0, 0, 0] },
+    psu: { geometry: <boxGeometry args={[0.7, 0.5, 0.85]} />, offset: [0, 0, 0] },
+    cooler: { geometry: <cylinderGeometry args={[0.25, 0.25, 0.3, 16]} />, offset: [0, 0, 0] },
+    soundcard: { geometry: <boxGeometry args={[0.15, 0.05, 0.4]} />, offset: [0, 0, 0] },
+    nic: { geometry: <boxGeometry args={[0.12, 0.05, 0.3]} />, offset: [0, 0, 0] },
+    monitor: { geometry: <boxGeometry args={[2.2, 1.4, 0.08]} />, offset: [0, 0, 0] },
+  }
+
+  const shape = shapes[category] || shapes.cpu
+
+  return (
+    <group position={position} ref={meshRef}>
+      <mesh>
+        {shape.geometry}
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={1.5}
+          transparent
+          opacity={0.7}
+        />
+      </mesh>
+      <Edges color={color} lineWidth={2} threshold={15} />
+    </group>
+  )
+}
+
+function CaseFrame({ selectedSlots }) {
+  const caseWidth = 2.2
+  const caseHeight = 5.5
+  const caseDepth = 1.2
+
+  return (
+    <group>
+      {/* Main case box - wireframe */}
+      <mesh>
+        <boxGeometry args={[caseWidth, caseHeight, caseDepth]} />
+        <meshStandardMaterial color="#111118" transparent opacity={0.05} />
+      </mesh>
+      <Edges
+        geometry={new THREE.BoxGeometry(caseWidth, caseHeight, caseDepth)}
+        color="#00d4ff"
+        lineWidth={1}
+        threshold={15}
+      />
+
+      {/* Motherboard mounting plate */}
+      <mesh position={[-0.3, 0.5, -0.35]}>
+        <boxGeometry args={[1.0, 1.6, 0.02]} />
+        <meshStandardMaterial color="#1a1a2e" transparent opacity={0.3} />
+      </mesh>
+
+      {/* PCIe slot indicators (horizontal lines on motherboard area) */}
+      {[0, -0.3, -0.6].map((y, i) => (
+        <group key={`pcie-${i}`}>
+          <mesh position={[0.15, y, -0.33]}>
+            <boxGeometry args={[0.02, 0.02, 0.5]} />
+            <meshStandardMaterial color="#00d4ff" transparent opacity={0.15} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* PSU mounting area (bottom rear) */}
+      <mesh position={[0.7, -2.2, 0]}>
+        <boxGeometry args={[0.7, 0.5, 0.85]} />
+        <meshStandardMaterial color="#1a1a2e" transparent opacity={0.2} />
+      </mesh>
+
+      {/* Drive bays (bottom front) */}
+      <mesh position={[-0.7, -2.2, 0.15]}>
+        <boxGeometry args={[0.6, 0.4, 0.8]} />
+        <meshStandardMaterial color="#1a1a2e" transparent opacity={0.2} />
+      </mesh>
+
+      {/* CPU cooler mounting holes (top of motherboard) */}
+      {[[-0.4, 0.9], [-0.2, 0.9], [-0.4, 0.7], [-0.2, 0.7]].map(([x, y], i) => (
+        <mesh key={`hole-${i}`} position={[x, y, -0.32]}>
+          <circleGeometry args={[0.03, 8]} />
+          <meshBasicMaterial color="#00d4ff" transparent opacity={0.2} />
+        </mesh>
+      ))}
+
+      {/* RAM slots (next to CPU) */}
+      {[1.05, 0.9, 0.75, 0.6].map((y, i) => (
+        <mesh key={`ram-${i}`} position={[0.15, y, -0.32]}>
+          <boxGeometry args={[0.4, 0.08, 0.02]} />
+          <meshStandardMaterial color="#00d4ff" transparent opacity={0.1} />
+        </mesh>
+      ))}
+
+      {/* M.2 slot (below CPU) */}
+      <mesh position={[0.1, 0.3, -0.32]}>
+        <boxGeometry args={[0.3, 0.02, 0.02]} />
+        <meshStandardMaterial color="#00d4ff" transparent opacity={0.15} />
+      </mesh>
+
+      {/* Front panel IO area */}
+      <mesh position={[-1.1, 1.5, 0]}>
+        <boxGeometry args={[0.02, 0.3, 0.4]} />
+        <meshStandardMaterial color="#1f1f2e" transparent opacity={0.3} />
+      </mesh>
+
+      {/* Rear IO shield */}
+      <mesh position={[-1.1, 0.8, 0]}>
+        <boxGeometry args={[0.02, 0.6, 0.5]} />
+        <meshStandardMaterial color="#1f1f2e" transparent opacity={0.4} />
+      </mesh>
+
+      {/* Stand */}
+      <mesh position={[0, -3.0, 0]}>
+        <boxGeometry args={[1.8, 0.15, 1.0]} />
+        <meshStandardMaterial color="#1f1f2e" transparent opacity={0.5} />
+      </mesh>
+
+      {/* Internal grid lines */}
+      {[-0.8, -0.3, 0.2, 0.7].map((x) => (
+        <line key={`vg-${x}`}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={2}
+              array={new Float32Array([x, -2.75, 0.6, x, 2.75, 0.6])}
+              itemSize={3}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial color="#00d4ff" transparent opacity={0.04} />
+        </line>
+      ))}
+      {[-2, -1, 0, 1, 2].map((y) => (
+        <line key={`hg-${y}`}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={2}
+              array={new Float32Array([-1.1, y, 0.6, 1.1, y, 0.6])}
+              itemSize={3}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial color="#00d4ff" transparent opacity={0.04} />
+        </line>
+      ))}
+
+      {/* Fan mounts (front and rear) */}
+      {/* Front fans */}
+      {[1.5, 0.5, -0.5].map((y, i) => (
+        <mesh key={`fan-f-${i}`} position={[1.1, y, 0]}>
+          <ringGeometry args={[0.15, 0.2, 16]} />
+          <meshBasicMaterial color="#00d4ff" transparent opacity={0.1} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+      {/* Rear fan */}
+      <mesh position={[-1.1, 1.5, 0]}>
+        <ringGeometry args={[0.12, 0.16, 16]} />
+        <meshBasicMaterial color="#00d4ff" transparent opacity={0.1} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
+}
+
+function SlotMarker({ position, color, label, isSelected, isHighlighted }) {
   const meshRef = useRef()
   const glowRef = useRef()
 
   useFrame((state) => {
     if (meshRef.current) {
-      const scale = isSelected ? 1.3 : isHighlighted ? 1.1 : 0.8
+      const scale = isSelected ? 1.3 : isHighlighted ? 1.1 : 0.7
       meshRef.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.1)
     }
     if (glowRef.current) {
@@ -68,139 +243,38 @@ function AnimatedSlot({ position, color, label, isSelected, isHighlighted }) {
     <group position={position}>
       {/* Core sphere */}
       <mesh ref={meshRef}>
-        <sphereGeometry args={[0.2, 16, 16]} />
+        <sphereGeometry args={[0.12, 12, 12]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={isSelected ? 2 : isHighlighted ? 1 : 0.2}
+          emissiveIntensity={isSelected ? 2.5 : isHighlighted ? 1.2 : 0.3}
           transparent
-          opacity={isSelected ? 1 : 0.5}
+          opacity={isSelected ? 1 : 0.6}
         />
       </mesh>
 
       {/* Glow ring */}
-      <mesh ref={glowRef}>
-        <ringGeometry args={[0.25, 0.35, 32]} />
+      <mesh ref={glowRef} rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.15, 0.22, 32]} />
         <meshBasicMaterial color={color} transparent opacity={0.1} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Selected indicator - solid block */}
-      {isSelected && (
-        <mesh>
-          <boxGeometry args={[0.35, 0.35, 0.35]} />
-          <meshStandardMaterial
-            color={color}
-            emissive={color}
-            emissiveIntensity={3}
-            transparent
-            opacity={0.4}
-          />
-        </mesh>
-      )}
-
       {/* Label */}
       <Html
-        position={[0, 0.5, 0]}
+        position={[0, 0.35, 0]}
         center
         style={{
           color: isSelected ? color : '#9ca3af',
-          fontSize: '12px',
+          fontSize: '11px',
           fontWeight: isSelected ? 'bold' : 'normal',
           whiteSpace: 'nowrap',
           pointerEvents: 'none',
-          textShadow: `0 0 8px ${color}40`,
+          textShadow: `0 0 8px ${color}60`,
           transition: 'all 0.3s',
         }}
       >
         {label}
       </Html>
-    </group>
-  )
-}
-
-function CaseFrame() {
-  return (
-    <group>
-      {/* Main case box */}
-      <mesh>
-        <boxGeometry args={[3.5, 6.5, 2]} />
-        <meshStandardMaterial color="#111118" transparent opacity={0.1} />
-      </mesh>
-      <Edges
-        geometry={new THREE.BoxGeometry(3.5, 6.5, 2)}
-        color="#00d4ff"
-        lineWidth={1}
-        threshold={15}
-      />
-
-      {/* Internal grid lines */}
-      {[-1, 0, 1].map((x) => (
-        <line key={`v${x}`}>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              count={2}
-              array={new Float32Array([x, -3.25, 1, x, 3.25, 1])}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial color="#00d4ff" transparent opacity={0.08} />
-        </line>
-      ))}
-      {[-2, -1, 0, 1, 2].map((y) => (
-        <line key={`h${y}`}>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              count={2}
-              array={new Float32Array([-1.75, y, 1, 1.75, y, 1])}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial color="#00d4ff" transparent opacity={0.08} />
-        </line>
-      ))}
-
-      {/* Stand */}
-      <mesh position={[0, -3.6, 0]}>
-        <boxGeometry args={[2, 0.2, 1.5]} />
-        <meshStandardMaterial color="#1f1f2e" transparent opacity={0.5} />
-      </mesh>
-    </group>
-  )
-}
-
-function ConnectingLines({ selectedSlots }) {
-  const lines = useMemo(() => {
-    const result = []
-    const center = [0, 0, 0]
-    Object.entries(slotPositions).forEach(([key, pos]) => {
-      if (key !== 'case') {
-        result.push({ from: center, to: pos, selected: selectedSlots.includes(key) })
-      }
-    })
-    return result
-  }, [selectedSlots])
-
-  return (
-    <group>
-      {lines.map((line, i) => (
-        <line key={i}>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              count={2}
-              array={new Float32Array([...line.from, ...line.to])}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial
-            color={line.selected ? slotColors[selectedSlots.find(s => s !== 'case') || 'cpu'] : '#1f1f2e'}
-            transparent
-            opacity={line.selected ? 0.5 : 0.08}
-          />
-        </line>
-      ))}
     </group>
   )
 }
@@ -212,20 +286,19 @@ function Scene({ build, activeCategory }) {
 
   return (
     <>
-      <ambientLight intensity={0.3} />
+      <ambientLight intensity={0.4} />
       <pointLight position={[5, 5, 5]} intensity={0.5} color="#ffffff" />
       <pointLight position={[-5, -5, 5]} intensity={0.3} color="#00d4ff" />
       <pointLight position={[5, -5, -5]} intensity={0.2} color="#a855f7" />
 
-      <CaseFrame />
-      <ConnectingLines selectedSlots={selectedSlots} />
+      <CaseFrame selectedSlots={selectedSlots} />
 
+      {/* Slot markers */}
       {Object.entries(slotPositions).map(([key, position]) => {
-        if (key === 'case') return null
         const isSelected = build[key] !== null
         const isHighlighted = activeCategory === key
         return (
-          <AnimatedSlot
+          <SlotMarker
             key={key}
             position={position}
             color={slotColors[key]}
@@ -236,15 +309,29 @@ function Scene({ build, activeCategory }) {
         )
       })}
 
+      {/* Selected part placeholders */}
+      {Object.entries(build).map(([category, part]) => {
+        if (!part || !slotPositions[category]) return null
+        return (
+          <PartPlaceholder
+            key={`part-${category}`}
+            position={slotPositions[category]}
+            color={slotColors[category]}
+            category={category}
+            isSelected={true}
+          />
+        )
+      })}
+
       <OrbitControls
         enablePan={false}
         enableZoom={true}
-        minDistance={8}
-        maxDistance={20}
+        minDistance={6}
+        maxDistance={16}
         autoRotate
-        autoRotateSpeed={0.5}
-        minPolarAngle={Math.PI * 0.2}
-        maxPolarAngle={Math.PI * 0.8}
+        autoRotateSpeed={0.3}
+        minPolarAngle={Math.PI * 0.25}
+        maxPolarAngle={Math.PI * 0.75}
       />
     </>
   )
@@ -252,9 +339,9 @@ function Scene({ build, activeCategory }) {
 
 export default function PCModel({ build, activeCategory }) {
   return (
-    <div className="w-full h-full bg-bg-primary">
+    <div className="w-full h-full">
       <Canvas
-        camera={{ position: [6, 4, 8], fov: 45 }}
+        camera={{ position: [5, 3, 6], fov: 45 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
